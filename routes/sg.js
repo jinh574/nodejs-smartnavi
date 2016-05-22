@@ -19,7 +19,7 @@ router.get('/', function(req, res, next) {
 	http.get(options,function (res)
 			{
 				body="";
-				response.on('data',function (chunk)
+				res.on('data',function (chunk)
 						{
 							sys.debug("response...");
 							body+=chunk;
