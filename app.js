@@ -37,6 +37,9 @@ app.use(function(req, res, next) {
 });
 
 // error handlers
+process.on('uncaughtException', function(err) {
+	console.log('Caught exception : ' + err.stack);
+});
 
 // development error handler
 // will print stacktrace
