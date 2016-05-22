@@ -4,7 +4,9 @@ var testing = require('../lib/sgfunction.js');
 var http = require('http');
 var sys=require('util');
 var xml2js = require('xml2js');
-
+var parser = new xml2js.Parser();
+var result;
+var body;
 var options = 
 {
 		host: 'openapi.seoul.go.kr',
@@ -12,29 +14,33 @@ var options =
 		path:'/sample/xml/CardSubwayStatsNew/1/5/20151101'
 };
 
-http.get(options,function (response)
-{
-	var body="";
-	response.addListener('data',function (chunk)
+router.get('/', function(req, res, next) {
+	
+	http.get(options,function (res)
 			{
-				sys.debug("response...");
-				body+=chunk;
+				body="";
+				response.on('data',function (chunk)
+						{
+							sys.debug("response...");
+							body+=chunk;
+						});
+				
+				res.on('end',function()
+						{
+							sys.debug("end...");
+							parser.parseString(body, function(err, res) {
+								result = res;
+							});
+							console.log(result);
+						});
+			})
+			.on('error',function (e)
+			{
+				console.log("Got error" + e.message);
 			});
 	
-	response.addListener('end',function()
-			{
-				sys.debug("end...");
-				jsonObj = xml2json.parser(body);
-				for(itemName in jsonObj.rss.channel)
-				{
-					console.log(jsonObj.rss.channel[itemName]);
-				}
-			});
-})
-.on('error',function (e)
-{
-	console.log("Got error" + e.message);
 });
+
 	
 
 
