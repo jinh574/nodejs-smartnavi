@@ -6,4 +6,15 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.post('/webhook', function(req, res, next) {
+	if(req.header('x-gitlab-token') === "starnight") {
+		exec('.deploy.sh');
+		res.sendStatus(200)
+		//test
+	}
+	else {
+		res.sendStatus(404);
+	}
+});
+
 module.exports = router;
