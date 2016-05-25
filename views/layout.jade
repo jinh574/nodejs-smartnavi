@@ -1,7 +1,51 @@
 doctype html
-html
-  head
-    title= title
-    link(rel='stylesheet', href='/stylesheets/style.css')
-  body
-    block content
+html(ng-app='myApp')
+	head
+		title= title
+		script(src='//code.jquery.com/jquery.min.js')
+		script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js')
+		script(src='//maps.googleapis.com/maps/api/js?key=AIzaSyBFsmEz9VVX7KmjZE-2QI--qI4T20Pu4rY&libraries=places')
+		link(rel='stylesheet', href='/stylesheets/style.css')
+		script.
+			var myApp = angular.module('myApp', []);
+			var srcInput, dstInput, srcSearch, dstSearch;
+			$(document).ready(function() {
+				srcInput = document.getElementById('placeSrcId');
+				dstInput = document.getElementById('placeDstId');
+				var srcAutocomplete, dstAutocomplete;
+				
+				var defaultBounds = new google.maps.LatLngBounds(
+					new google.maps.LatLng(-33.8902, 151.1759),
+					new google.maps.LatLng(-33.8474, 151.2631));
+				var options = {
+					types: ['(cities)'],
+					componentRestrictions: {country: 'ko'}
+				};
+				srcAutocomplete = new google.maps.places.Autocomplete(srcInput, options);
+				dstAutocomplete = new google.maps.places.Autocomplete(dstInput, options);
+				
+				srcSearch = new google.maps.places.SearchBox(srcInput, options);
+				dstSearch = new google.maps.places.SearchBox(dstInput, options);			
+			});
+			myApp.controller('placeCtrl', function($scope, $http) {
+				$scope.find = function() {
+					var srcPlaces = srcSearch.getPlaces();
+					var dstPlaces = dstSearch.getPlaces();
+					if(srcPlaces && dstPlaces) {
+						console.log(srcPlaces[0]);
+						$scope.src = srcPlaces[0];
+						$scope.dst = dstPlaces[0];
+					}
+					
+				}
+			});
+			myApp.controller('developCtrl', function($scope, $http) {
+				$scope.devStartDate = {
+					value: new Date(2016, 05, 25, 13, 00)
+				};
+				$scope.devEndDate = {
+					value: new Date(2016, 05, 25, 13, 00)
+				};
+			});
+	body
+		block content

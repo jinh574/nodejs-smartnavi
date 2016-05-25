@@ -1,6 +1,15 @@
-extends layout
+doctype html
+html
 
-block content
-	h1= title
-	p Welcome to #{title}
-	
+	head
+	body(style:"width:1000px;height:1000px;")
+		#map(style:"width:500px;height:300px;")
+		script.
+			var map;
+			function initMap() {
+				map = new google.maps.Map(document.getElementById('map'), {
+					center: {lat: -34.397, lng: 150.644},
+					zoom: 8
+				});
+			}
+		script(src="//maps.googleapis.com/maps/api/js?key=AIzaSyBFsmEz9VVX7KmjZE-2QI--qI4T20Pu4rY&callback=initMap", async, defer)

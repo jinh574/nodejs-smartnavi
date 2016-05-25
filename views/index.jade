@@ -2,7 +2,59 @@ extends layout
 
 block content
 	h1= title
-	p Welcome to #{title}
-	div
-		div 안녕 난 지승이야.
-		.wow 안녕
+	p #{title}에 오신것을 환영합니다.
+	hr/
+	div(ng-controller='developCtrl')
+		p
+			|약속시간 :
+			input(type='datetime-local', ng-model='devStartDate.value', placeholder="yyyy-MM-ddTHH:mm:ss")
+			|~
+			input(type='datetime-local', ng-model='devEndDate.value', placeholder="yyyy-MM-ddTHH:mm:ss")
+		p 시작시간 {{devStartDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
+		p 종료시간 {{devEndDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
+	hr/
+	div(ng-controller='placeCtrl')
+		form
+			input(type='text', placeholder='출발지', name='src', ng-model='placeSrc', id='placeSrcId', style='width:500px')
+			&nbsp;
+			input(type='text', placeholder='도착지', name='dst', ng-model='placeDst', id='placeDstId', style='width:500px')
+			&nbsp;
+			input(type='submit' value='경로찾기', ng-click='find()')
+		div
+			div(style='display: inline-block; width:505px')
+				출발지
+				table
+					tr
+						th 검색어
+						td {{src.name}}
+					tr
+						th 주소
+						td {{src.formatted_address}}
+					tr
+						th 연락처
+						td {{src.formatted_phone_number}}
+					tr
+						th 사이트
+						td {{src.website}}
+					tr
+						th 위치좌표
+						td {{src.geometry.location}}
+			&nbsp;
+			div(style='display: inline-block; width:505px')
+				도착지
+				table
+					tr
+						th 검색어
+						td {{dst.name}}
+					tr
+						th 주소
+						td {{dst.formatted_address}}
+					tr
+						th 연락처
+						td {{dst.formatted_phone_number}}
+					tr
+						th 사이트
+						td {{dst.website}}
+					tr
+						th 위치좌표
+						td {{dst.geometry.location}}
