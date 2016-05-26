@@ -4,25 +4,28 @@ block content
 	h1= title
 	p #{title}에 오신것을 환영합니다.
 	hr/
-	div(ng-controller='developCtrl')
+	div(ng-controller='planCtrl')
 		p
 			|약속시간 :
 			input(type='datetime-local', ng-model='devStartDate.value', placeholder="yyyy-MM-ddTHH:mm:ss")
 			|~
 			input(type='datetime-local', ng-model='devEndDate.value', placeholder="yyyy-MM-ddTHH:mm:ss")
-		p 시작시간 {{devStartDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
-		p 종료시간 {{devEndDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
+		div#planInfo(date="{{devStartDate.value}}")
+			p 시작시간 {{devStartDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
+			p 종료시간 {{devEndDate.value | date: "yyyy년 MM월 dd일 HH시 mm분"}}
 	hr/
 	div(ng-controller='placeCtrl')
-		form
-			input(type='text', placeholder='출발지', name='src', ng-model='placeSrc', id='placeSrcId', style='width:500px')
-			&nbsp;
-			input(type='text', placeholder='도착지', name='dst', ng-model='placeDst', id='placeDstId', style='width:500px')
-			&nbsp;
-			input(type='submit' value='경로찾기', ng-click='find()')
-		div
-			div(style='display: inline-block; width:505px')
-				출발지
+		p 위치 검색
+			form
+				input(type='text', placeholder='출발지', name='src', ng-model='placeSrc', id='placeSrcId', style='width:500px', autofocus)
+				span &nbsp;
+				input(type='text', placeholder='도착지', name='dst', ng-model='placeDst', id='placeDstId', style='width:500px')
+				span &nbsp;
+				input(type='submit' value='경로찾기', ng-click='find()')
+		div {{error}}
+		p
+		div#locationInfo(style={display: 'none'})
+			div(style='display: inline-block; width:505px') 출발지
 				table
 					tr
 						th 검색어
@@ -39,9 +42,8 @@ block content
 					tr
 						th 위치좌표
 						td {{src.geometry.location}}
-			&nbsp;
-			div(style='display: inline-block; width:505px')
-				도착지
+			span &nbsp;
+			div(style='display: inline-block; width:505px') 도착지
 				table
 					tr
 						th 검색어
@@ -58,3 +60,32 @@ block content
 					tr
 						th 위치좌표
 						td {{dst.geometry.location}}
+	hr/
+	div(ng-controller='devCtrl')
+		p
+			button 사고발생
+			button(disabled) 막차이벤트
+		hr/
+		p
+			div
+				p
+					strong 경로 추천
+					span(style={align: 'right'}) &nbsp;&nbsp;&nbsp;&nbsp;
+						input(type='radio', name='priority', value='timeFirst', checked, ng-click='timeFirst()')
+						| 시간우선&nbsp;&nbsp;&nbsp;&nbsp;
+						input(type='radio', name='priority', value='comfortableFirst', ng-click='comfortableFirst()')
+						| 쾌적우선
+			div#map
+		hr/
+		p
+			strong 도착지 주변 관광지 정보
+			div(ng-repeat='item in tourList', style={border: '1px solid', display: 'inline-block', margin: '1em', width: '250px'})
+				table
+					tr
+						img(ng-if='$index', src='{{item.firstimage}}', style={width: '250px'})
+					tr
+						th 이름
+						td {{item.title}}
+					tr
+						th 주소
+						td {{item.addr1}}<br/>{{item.addr2}}

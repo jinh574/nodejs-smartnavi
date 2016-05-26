@@ -6,9 +6,93 @@ html(ng-app='myApp')
 		script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js')
 		script(src='//maps.googleapis.com/maps/api/js?key=AIzaSyBFsmEz9VVX7KmjZE-2QI--qI4T20Pu4rY&libraries=places')
 		link(rel='stylesheet', href='/stylesheets/style.css')
+		style.
+			#map {
+				width: 1000x;
+				height: 600px;
+			}
+			#warnings-panel {
+				width: 100%;
+				height:10%;
+				text-align: center;
+			}
+			#locationInfo {
+				display: none;
+			}
 		script.
 			var myApp = angular.module('myApp', []);
 			var srcInput, dstInput, srcSearch, dstSearch;
+			var map;
+			var selectPath = [];
+			var markerArray = [];
+			var directionsService;
+			var directionsDisplay;
+			var stepDisplay;
+			
+			function initMap() {				
+				directionsService = new google.maps.DirectionsService;
+				map = new google.maps.Map(document.getElementById('map'), {
+					zoom: 13,
+					center: {lat: 37.566, lng: 126.977}
+				});
+				
+				directionsDisplay = new google.maps.DirectionsRenderer({map: map});
+				stepDisplay = new google.maps.InfoWindow;
+			}
+			
+			function calculateAndDisplayRoute(origin, dest) {
+				var waypts = [];
+				var location = new google.maps.LatLng(37.5122579, 127.07190109999999);
+				waypts.push({
+					location: location,
+					stopover: false
+				});
+				//찍혀 있는 경로 지우기
+				for(var i = 0; i < markerArray.length; i++) {
+					markerArray[i].setMap(null);
+				}
+				directionsService.route({
+					origin: origin,
+					destination: dest,
+					travelMode: google.maps.TravelMode.TRANSIT
+				}, function(response, status) {
+					if(status === google.maps.DirectionsStatus.OK) {
+						directionsDisplay.setDirections(response);
+						showSteps(response);
+					} else {
+						window.alert(status, response);
+					}
+				});
+			}
+			function showSteps(directionResult) {
+				var myRoute = directionResult.routes[0].legs[0];
+				for(var i = 0; i < myRoute.steps.length; i++) {
+					var marker = markerArray[i] = markerArray[i] || new google.maps.Marker;
+					marker.setMap(map);
+					marker.setPosition(myRoute.steps[i].start_location);
+					attachInstructionText(marker, myRoute.steps[i].instructions);
+				}
+			}
+			function attachInstructionText(marker, text) {
+				google.maps.event.addListener(marker, 'click', function() {
+					stepDisplay.setContent(text);
+					stepDisplay.open(map, marker);
+				})
+			}
+			
+			function refreshMarker(select) {
+				for(var i = 0; i < selectPath.length; i++) {
+					for(var j = 0; j < selectPath[i].length; j++) {
+						selectPath[i][j].setMap(null);	
+					}
+				}
+				for (var i = 0; i < selectPath[select].length; i++) {
+					selectPath[select][i].setMap(map);
+					var marker = selectPath[select][i] = selectPath[select][i] || new google.maps.Marker;
+					attachInstructionText(marker, marker.getTitle());
+				}
+			}
+			
 			$(document).ready(function() {
 				srcInput = document.getElementById('placeSrcId');
 				dstInput = document.getElementById('placeDstId');
@@ -25,27 +109,194 @@ html(ng-app='myApp')
 				dstAutocomplete = new google.maps.places.Autocomplete(dstInput, options);
 				
 				srcSearch = new google.maps.places.SearchBox(srcInput, options);
-				dstSearch = new google.maps.places.SearchBox(dstInput, options);			
+				dstSearch = new google.maps.places.SearchBox(dstInput, options);	
+				
+				initMap();
+			});
+			myApp.controller('parentCtrl', function($scope, $http) {
+				$scope.$on('showTourlistParent', function(event, args) {
+					$scope.$broadcast('showTourlistChild', args);
+				});
+				$scope.$on('timeFirst', function(event, args) {
+					$scope.$broadcast('normalPath', 1);
+				});
+				$scope.$on('comfortableFirst', function(event, args) {
+					$scope.$broadcast('filterPath', 1);					
+				});
 			});
 			myApp.controller('placeCtrl', function($scope, $http) {
+				$scope.$on('normalPath', function() {
+					$scope.normalPath();
+				});
+				$scope.$on('filterPath', function() {
+					$scope.filterPath();
+				});
 				$scope.find = function() {
 					var srcPlaces = srcSearch.getPlaces();
 					var dstPlaces = dstSearch.getPlaces();
+					var tmpDate = $('#planInfo').attr('date');
+					var date = new Date(tmpDate.substring(1,tmpDate.length-6));
 					if(srcPlaces && dstPlaces) {
-						console.log(srcPlaces[0]);
 						$scope.src = srcPlaces[0];
 						$scope.dst = dstPlaces[0];
+						var data = {
+							start_y: srcPlaces[0].geometry.location.lat(),
+							start_x: srcPlaces[0].geometry.location.lng(),
+							des_y: dstPlaces[0].geometry.location.lat(),
+							des_x: dstPlaces[0].geometry.location.lng(),
+							year: date.getYear(),
+							month: date.getMonth(),
+							hour: date.getHours()
+						}
+						$scope.$emit('showTourlistParent', data);
+						$http.get('sg/filterPath', {
+							params: data
+						}).success(function(result) {
+							var tmp;	
+							for(var i = 0; i < result.length; i++) {
+								for(var j = 0; j< result[i].length; j++) {
+									if(result[i][j].trafficType != 3) {
+										tmp = result[i][j].passStopList.stations;
+										for(var k = 0; k < tmp.length; k++) {
+											markerArray.push(new google.maps.Marker({
+												position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
+												map: map,
+												animation: google.maps.Animation.DROP,
+												title: tmp[k].stationName
+											}));
+										}
+									}
+								}
+								selectPath.push(markerArray);
+								markerArray = new Array();
+							}
+							console.log(selectPath);
+							refreshMarker(0);
+						}).error(function(data, result) {
+							$scope.error = result;
+						});
+						$('#locationInfo').slideDown();
+						
+						//맵의 중앙 정함
+						map.setCenter(new google.maps.LatLng((data.start_y+data.des_y)/2,(data.start_x+data.des_x)/2));
+						//calculateAndDisplayRoute($scope.src.geometry.location, $scope.dst.geometry.location);
 					}
-					
 				}
+				$scope.normalPath = function() {
+					alert(1);
+					var data = {
+						start_y: $scope.src.geometry.location.lat(),
+						start_x: $scope.src.geometry.location.lng(),
+						des_y: $scope.dst.geometry.location.lat(),
+						des_x: $scope.dst.geometry.location.lng()
+					}
+					var date = new Date(tmpDate.substring(1,tmpDate.length-6));	
+					selectPath = [];
+					markerArray = [];
+					$http.get('sg/normalPath', {
+						params: data
+					}).success(function(result) {
+						var tmp;	
+						for(var i = 0; i < result.length; i++) {
+							for(var j = 0; j< result[i].length; j++) {
+								if(result[i][j].trafficType != 3) {
+									tmp = result[i][j].passStopList.stations;
+									for(var k = 0; k < tmp.length; k++) {
+										markerArray.push(new google.maps.Marker({
+											position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
+											map: map,
+											animation: google.maps.Animation.DROP,
+											title: tmp[k].stationName
+										}));
+									}
+								}
+							}
+							selectPath.push(markerArray);
+							markerArray = new Array();
+						}
+						refreshMarker(0);
+					}).error(function(data, result) {
+						$scope.error = result;
+					});
+					$('#locationInfo').slideDown();
+					
+					//맵의 중앙 정함
+					map.setCenter(new google.maps.LatLng((data.start_y+data.des_y)/2,(data.start_x+data.des_x)/2));
+
+				};
+				$scope.filterPath = function() {
+					alert(2);
+					var tmpDate = $('#planInfo').attr('date');
+					var date = new Date(tmpDate.substring(1,tmpDate.length-6));
+					var data = {
+						start_y: $scope.src.geometry.location.lat(),
+						start_x: $scope.src.geometry.location.lng(),
+						des_y: $scope.dst.geometry.location.lat(),
+						des_x: $scope.dst.geometry.location.lng(),					
+						year: date.getYear(),
+						month: date.getMonth(),
+						hour: date.getHours()
+					}
+					selectPath = [];
+					markerArray = [];
+					$http.get('sg/filterPath', {
+						params: data
+					}).success(function(result) {
+						var tmp;	
+						for(var i = 0; i < result.length; i++) {
+							for(var j = 0; j< result[i].length; j++) {
+								if(result[i][j].trafficType != 3) {
+									tmp = result[i][j].passStopList.stations;
+									for(var k = 0; k < tmp.length; k++) {
+										markerArray.push(new google.maps.Marker({
+											position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
+											map: map,
+											animation: google.maps.Animation.DROP,
+											title: tmp[k].stationName
+										}));
+									}
+								}
+							}
+							selectPath.push(markerArray);
+							markerArray = new Array();
+						}
+						refreshMarker(0);
+					}).error(function(data, result) {
+						$scope.error = result;
+					});
+					$('#locationInfo').slideDown();
+					
+					//맵의 중앙 정함
+					map.setCenter(new google.maps.LatLng((data.start_y+data.des_y)/2,(data.start_x+data.des_x)/2));
+
+				};
 			});
-			myApp.controller('developCtrl', function($scope, $http) {
+			myApp.controller('planCtrl', function($scope, $http) {
+				var today = new Date();
 				$scope.devStartDate = {
-					value: new Date(2016, 05, 25, 13, 00)
+					value: new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours(), today.getMinutes())
 				};
 				$scope.devEndDate = {
-					value: new Date(2016, 05, 25, 13, 00)
+					value: new Date(today.getFullYear(), today.getMonth(), today.getDate(), today.getHours()+2, today.getMinutes())
 				};
 			});
-	body
+			myApp.controller('devCtrl', function($scope, $http) {
+				var url = 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/locationBasedList?ServiceKey=7HaSuF8RdKqTmt3may4V8MaXnviGh9Y6atxqSyAlFLM2UIJaTIaFoTah6gZw4lk22sp%2BcoBMP5SMD1ttpsiiag%3D%3D&radius=2000&MobileApp=smartnavi&MobileOS=ETC';
+				$scope.$on('showTourlistChild', function(event, args) {
+					url += '&mapX=' + args.dstLng;
+					url += '&mapY=' + args.dstLat;
+					$http.get(url).then(function(result) {
+						var obj = result.data.response.body.items.item;
+						$scope.tourList = obj;
+					});
+				});
+				$scope.timeFirst = function() {
+					$scope.$emit('timeFirst', 1);
+				};
+				$scope.comfortableFirst = function() {
+					$scope.$emit('comfortableFirst', 1);
+				};
+				$scope.$emiiter
+			});
+	body(ng-controller='parentCtrl')
 		block content
