@@ -63,7 +63,8 @@ block content
 	hr/
 	div(ng-controller='devCtrl')
 		p
-			button 사고발생
+			button(ng-click='occurWarning()') 사고발생
+			button(ng-click='avoidPath()') 우회하기
 			button(disabled) 막차이벤트
 		hr/
 		p

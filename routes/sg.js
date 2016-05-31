@@ -16,17 +16,22 @@ router.get('/search', function(req, res)
 	res.send(sg_func.searchddRoute(obj));
 });
 
+
 router.get('/path',function(req,res)
 {
-	var srcLat = req.query.srcLat;
+/*var srcLat = req.query.srcLat;
 	var srcLng = req.query.srcLng;
 	var dstLat = req.query.dstLat;
-	var dstLng = req.query.dstLng;
-	
-	console.log("test:");
-	console.log(req.query);
-	sg_func.searchRoute(srcLat,srcLng,dstLat,dstLng);
-	res.sendStaus(200);
+	var dstLng = req.query.dstLng;*/
+				
+	var srcLat = 126.9317438;
+	var srcLng = 37.6000000;
+	var dstLat = 126.9779453;
+	var dstLng = 37.5597722;
+
+	//console.log(req.query);
+	var result = sg_func.searchRoute(srcLat,srcLng,dstLat,dstLng);
+	res.send(result);
 });
 
 router.get('/normalPath',function(req,res)

@@ -28,6 +28,11 @@ html(ng-app='myApp')
 			var directionsService;
 			var directionsDisplay;
 			var stepDisplay;
+			var warningMarker = new google.maps.Marker({
+				map: map,
+				animation: google.maps.Animation.DROP,
+				label: '사고발생'
+			});
 			
 			function initMap() {				
 				directionsService = new google.maps.DirectionsService;
@@ -92,6 +97,14 @@ html(ng-app='myApp')
 					attachInstructionText(marker, marker.getTitle());
 				}
 			}
+			function removeMarker() {
+				for(var i = 0; i < selectPath.length; i++) {
+					for(var j = 0; j < selectPath[i].length; j++) {
+						selectPath[i][j].setMap(null);	
+					}
+				}
+				warningMarker.setMap(null);
+			}
 			
 			$(document).ready(function() {
 				srcInput = document.getElementById('placeSrcId');
@@ -134,8 +147,9 @@ html(ng-app='myApp')
 				$scope.find = function() {
 					var srcPlaces = srcSearch.getPlaces();
 					var dstPlaces = dstSearch.getPlaces();
-					var tmpDate = $('#planInfo').attr('date');
-					var date = new Date(tmpDate.substring(1,tmpDate.length-6));
+					removeMarker();
+					selectPath = [];
+					markerArr = [];
 					if(srcPlaces && dstPlaces) {
 						$scope.src = srcPlaces[0];
 						$scope.dst = dstPlaces[0];
@@ -143,13 +157,10 @@ html(ng-app='myApp')
 							start_y: srcPlaces[0].geometry.location.lat(),
 							start_x: srcPlaces[0].geometry.location.lng(),
 							des_y: dstPlaces[0].geometry.location.lat(),
-							des_x: dstPlaces[0].geometry.location.lng(),
-							year: date.getYear(),
-							month: date.getMonth(),
-							hour: date.getHours()
+							des_x: dstPlaces[0].geometry.location.lng()
 						}
 						$scope.$emit('showTourlistParent', data);
-						$http.get('sg/filterPath', {
+						$http.get('sg/normalPath', {
 							params: data
 						}).success(function(result) {
 							var tmp;	
@@ -162,6 +173,7 @@ html(ng-app='myApp')
 												position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
 												map: map,
 												animation: google.maps.Animation.DROP,
+												icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
 												title: tmp[k].stationName
 											}));
 										}
@@ -170,7 +182,6 @@ html(ng-app='myApp')
 								selectPath.push(markerArray);
 								markerArray = new Array();
 							}
-							console.log(selectPath);
 							refreshMarker(0);
 						}).error(function(data, result) {
 							$scope.error = result;
@@ -183,14 +194,13 @@ html(ng-app='myApp')
 					}
 				}
 				$scope.normalPath = function() {
-					alert(1);
 					var data = {
 						start_y: $scope.src.geometry.location.lat(),
 						start_x: $scope.src.geometry.location.lng(),
 						des_y: $scope.dst.geometry.location.lat(),
 						des_x: $scope.dst.geometry.location.lng()
 					}
-					var date = new Date(tmpDate.substring(1,tmpDate.length-6));	
+					removeMarker();
 					selectPath = [];
 					markerArray = [];
 					$http.get('sg/normalPath', {
@@ -206,6 +216,7 @@ html(ng-app='myApp')
 											position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
 											map: map,
 											animation: google.maps.Animation.DROP,
+											icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
 											title: tmp[k].stationName
 										}));
 									}
@@ -225,7 +236,6 @@ html(ng-app='myApp')
 
 				};
 				$scope.filterPath = function() {
-					alert(2);
 					var tmpDate = $('#planInfo').attr('date');
 					var date = new Date(tmpDate.substring(1,tmpDate.length-6));
 					var data = {
@@ -237,6 +247,7 @@ html(ng-app='myApp')
 						month: date.getMonth(),
 						hour: date.getHours()
 					}
+					removeMarker();
 					selectPath = [];
 					markerArray = [];
 					$http.get('sg/filterPath', {
@@ -252,6 +263,7 @@ html(ng-app='myApp')
 											position: new google.maps.LatLng(tmp[k].y, tmp[k].x),
 											map: map,
 											animation: google.maps.Animation.DROP,
+											icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
 											title: tmp[k].stationName
 										}));
 									}
@@ -281,12 +293,14 @@ html(ng-app='myApp')
 				};
 			});
 			myApp.controller('devCtrl', function($scope, $http) {
-				var url = 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/locationBasedList?ServiceKey=7HaSuF8RdKqTmt3may4V8MaXnviGh9Y6atxqSyAlFLM2UIJaTIaFoTah6gZw4lk22sp%2BcoBMP5SMD1ttpsiiag%3D%3D&radius=2000&MobileApp=smartnavi&MobileOS=ETC';
 				$scope.$on('showTourlistChild', function(event, args) {
-					url += '&mapX=' + args.dstLng;
-					url += '&mapY=' + args.dstLat;
+					var url = 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/locationBasedList?ServiceKey=7HaSuF8RdKqTmt3may4V8MaXnviGh9Y6atxqSyAlFLM2UIJaTIaFoTah6gZw4lk22sp%2BcoBMP5SMD1ttpsiiag%3D%3D&radius=2000&MobileApp=smartnavi&MobileOS=ETC';
+					url += '&mapX=' + args.des_x;
+					url += '&mapY=' + args.des_y;
 					$http.get(url).then(function(result) {
 						var obj = result.data.response.body.items.item;
+						console.log("I am here", result);
+						$scope.tourList = new Array();
 						$scope.tourList = obj;
 					});
 				});
@@ -296,7 +310,16 @@ html(ng-app='myApp')
 				$scope.comfortableFirst = function() {
 					$scope.$emit('comfortableFirst', 1);
 				};
-				$scope.$emiiter
+				$scope.occurWarning = function() {
+					var position_prev = selectPath[0][selectPath[0].length/2].getPosition();
+					var position_next = selectPath[0][selectPath[0].length/2+1].getPosition();
+					var newPos = new google.maps.LatLng((position_prev.lat()+position_next.lat())/2, (position_prev.lng()+position_next.lng())/2);
+					warningMarker.setPosition(newPos);
+					warningMarker.setMap(map);
+				};
+				$scope.avoidPath = function() {
+					refreshMarker(selectPath.length-1);	
+				};
 			});
 	body(ng-controller='parentCtrl')
 		block content
