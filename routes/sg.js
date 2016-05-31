@@ -41,7 +41,10 @@ router.get('/normalPath',function(req,res)
 	var des_x=req.query.des_x;
 	var des_y=req.query.des_y;
 	//sg_func.normalPath(start_x,start_y,des_x,des_y);
-	res.send(sg_func.normalPath(start_x,start_y,des_x,des_y));
+	sg_func.normalPath(start_x, start_y, des_x, des_y, function(data) {
+		res.send(data);
+	});
+	//res.send(sg_func.normalPath(start_x,start_y,des_x,des_y));
 });
 
 router.get('/filterPath',function(req,res)
@@ -54,7 +57,10 @@ router.get('/filterPath',function(req,res)
 	var month=req.query.month;
 	var hour=req.query.hour;
 	//sg_func.filterPath(start_x,start_y,des_x,des_y,year,month,hour);
-	res.send(sg_func.filterPath(start_x,start_y,des_x,des_y,year,month,hour));
+	sg_func.filterPath(start_x, start_y, des_x, des_y, year, month, hour, function(data) {
+		res.send(data);
+	});
+	//res.send(sg_func.filterPath(start_x,start_y,des_x,des_y,year,month,hour));
 });
 
 
