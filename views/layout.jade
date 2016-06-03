@@ -25,6 +25,8 @@ html(ng-app='myApp')
 			var map;
 			var selectPath = [];
 			var markerArray = [];
+			var pathArray = [];
+			var pathPolyline;
 			var directionsService;
 			var directionsDisplay;
 			var stepDisplay;
@@ -56,6 +58,7 @@ html(ng-app='myApp')
 				for(var i = 0; i < markerArray.length; i++) {
 					markerArray[i].setMap(null);
 				}
+
 				directionsService.route({
 					origin: origin,
 					destination: dest,
@@ -91,11 +94,30 @@ html(ng-app='myApp')
 						selectPath[i][j].setMap(null);	
 					}
 				}
+				if(pathPolyline) {
+					pathArray = [];
+					pathPolyline.setMap(null);
+				}
+
+
 				for (var i = 0; i < selectPath[select].length; i++) {
 					selectPath[select][i].setMap(map);
 					var marker = selectPath[select][i] = selectPath[select][i] || new google.maps.Marker;
 					attachInstructionText(marker, marker.getTitle());
+					pathArray.push(selectPath[select][i].getPosition().toJSON());
 				}
+				if(pathPolyline) {
+					pathPolyline.setPath(pathArray);
+				} else {
+					pathPolyline = new google.maps.Polyline({
+						path: pathArray,
+						geodesic: true,
+						strokeColor: '#FF0000',
+						strokeOpacity: 1.0,
+						strokeWeight: 2
+					});
+				}
+				pathPolyline.setMap(map);
 			}
 			function removeMarker() {
 				for(var i = 0; i < selectPath.length; i++) {
@@ -104,6 +126,10 @@ html(ng-app='myApp')
 					}
 				}
 				warningMarker.setMap(null);
+				if (pathPolyline) {
+					pathArray = [];
+					pathPolyline.setMap(null);
+				}
 			}
 			
 			$(document).ready(function() {
