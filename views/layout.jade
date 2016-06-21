@@ -325,7 +325,6 @@ html(ng-app='myApp')
 					url += '&mapY=' + args.des_y;
 					$http.get(url).then(function(result) {
 						var obj = result.data.response.body.items.item;
-						console.log("I am here", result);
 						$scope.tourList = new Array();
 						$scope.tourList = obj;
 					});
